@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1051090044610",
+    "project_id": "telegram-social-app",
+    "storage_bucket": "telegram-social-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051090044610:android:edde4b158e4234a9ee5d5b",
+        "android_client_info": {
+          "package_name": "com.dreamer.telegramchatapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1051090044610-7q91g7nobarc44t7ndjdq8gj421d50cl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBl3VZ2u0MFKmRxiEqavMy-bFloKG79dCs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1051090044610-7q91g7nobarc44t7ndjdq8gj421d50cl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
