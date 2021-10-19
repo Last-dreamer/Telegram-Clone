@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -15,18 +14,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class LoginScreenState extends State<LoginScreen> {
-
   final googleSignIn = GoogleSignIn();
   final _auth = FirebaseAuth.instance;
   SharedPreferences _pref;
 
   bool isLoggedIn = false;
   bool isLoading = false;
-  FirebaseUser _user;
+  User _user;
 
   @override
   void initState() {
-
     isSignIn();
     super.initState();
   }
@@ -49,7 +46,7 @@ class LoginScreenState extends State<LoginScreen> {
             Text(
               "Telgram Clone",
               style: TextStyle(
-                  fontFamily: "Signatra", fontSize: 82, color: Colors.white),
+                  fontFamily: "Signatra", fontSize: 62, color: Colors.white),
             ),
             InkWell(
               onTap: controlSignIn,
@@ -81,56 +78,62 @@ class LoginScreenState extends State<LoginScreen> {
 
     GoogleSignInAccount googleUser = await googleSignIn.signIn();
     GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    final credentials = GoogleAuthProvider.getCredential(
+
+    final credentials = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken, accessToken: googleAuth.accessToken);
 
-    FirebaseUser user = (await _auth.signInWithCredential(credentials)).user;
+    User user = (await _auth.signInWithCredential(credentials)).user;
 
     if (user != null) {
       // if user exists..
-      final QuerySnapshot resultQuery = await Firestore.instance
+      final QuerySnapshot resultQuery = await FirebaseFirestore.instance
           .collection("users")
           .where("id", isEqualTo: user.uid)
-          .getDocuments();
-      final List<DocumentSnapshot> documentSnapshots = resultQuery.documents;
+          .get();
 
-      if(documentSnapshots.length == 0){
-        Firestore.instance.collection("users").document(user.uid).setData({
-          "id" : user.uid,
+      final List<DocumentSnapshot> documentSnapshots = resultQuery.docs;
+
+      if (documentSnapshots.length == 0) {
+        FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+          "id": user.uid,
           "nickname": user.displayName,
-          "photourl": user.photoUrl,
+          "photourl": user.photoURL,
           "createAt": DateTime.now().millisecondsSinceEpoch.toString(),
           "aboutMe": "i'm dreamer and it's telegram clone...",
           "chattingWith": null
         });
 
-      //  to local
+        //  to local
         _user = user;
         await _pref.setString("id", _user.uid);
         await _pref.setString("nickname", _user.displayName);
-        await _pref.setString("photourl", _user.photoUrl);
-
+        await _pref.setString("photourl", _user.photoURL);
       } else {
-
+        // if user is already loggedin.....
         _user = user;
         await _pref.setString("id", documentSnapshots[0]['id']);
         await _pref.setString("nickname", documentSnapshots[0]['nickname']);
         await _pref.setString("photourl", documentSnapshots[0]['photourl']);
         await _pref.setString("aboutMe", documentSnapshots[0]['aboutMe']);
-
       }
 
+      Fluttertoast.showToast(
+          msg: "yup ... ${_user.displayName}", toastLength: Toast.LENGTH_LONG);
 
-      Fluttertoast.showToast(msg: "yup ...", toastLength: Toast.LENGTH_LONG);
       setState(() {
         isLoading = false;
       });
 
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => HomeScreen(currentUserId: _pref.getString("id"),)), (route) => false);
-
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => HomeScreen(
+                    currentUserId: _pref.getString("id"),
+                  )));
     } else {
       Fluttertoast.showToast(
           msg: "Sign-in failed ...", toastLength: Toast.LENGTH_LONG);
+
       setState(() {
         isLoading = false;
       });
@@ -138,22 +141,24 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   void isSignIn() async {
-
     setState(() {
       isLoading = true;
     });
 
-    _pref  = await  SharedPreferences.getInstance();
+    _pref = await SharedPreferences.getInstance();
     isLoggedIn = await googleSignIn.isSignedIn();
 
-    if(isLoggedIn){
-      Navigator.push(context, MaterialPageRoute(builder: (_) => HomeScreen(currentUserId: _pref.getString("id"),)));
+    if (isLoggedIn) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => HomeScreen(
+                    currentUserId: _pref.getString("id"),
+                  )));
     }
 
     setState(() {
       isLoading = false;
     });
-
   }
-
 }
