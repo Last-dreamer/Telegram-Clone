@@ -57,7 +57,9 @@ class LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                       image: DecorationImage(
                           image: AssetImage(
-                              "assets/images/google_signin_button.png"))),
+                              "assets/images/google_signin_button.png"),
+                        fit: BoxFit.cover
+                      )),
                 ),
               ),
             ),
@@ -124,16 +126,15 @@ class LoginScreenState extends State<LoginScreen> {
         isLoading = false;
       });
 
-      Navigator.push(
+      Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
               builder: (_) => HomeScreen(
                     currentUserId: _pref.getString("id"),
-                  )));
+                  ),), (_) => false);
     } else {
       Fluttertoast.showToast(
           msg: "Sign-in failed ...", toastLength: Toast.LENGTH_LONG);
-
       setState(() {
         isLoading = false;
       });
@@ -149,12 +150,12 @@ class LoginScreenState extends State<LoginScreen> {
     isLoggedIn = await googleSignIn.isSignedIn();
 
     if (isLoggedIn) {
-      Navigator.push(
+      Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
               builder: (_) => HomeScreen(
                     currentUserId: _pref.getString("id"),
-                  )));
+                  )), (_)=> false);
     }
 
     setState(() {

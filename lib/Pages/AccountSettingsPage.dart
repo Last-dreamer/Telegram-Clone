@@ -46,7 +46,10 @@ class SettingsScreenState extends State<SettingsScreen> {
 
   SharedPreferences _pref;
   File imageFileAvatar;
-  bool isLoading;
+  bool isLoading = false;
+
+  FocusNode nicknameFocus = FocusNode();
+  FocusNode aboutMeFocus = FocusNode();
 
   @override
   void initState() {
@@ -55,7 +58,6 @@ class SettingsScreenState extends State<SettingsScreen> {
   }
 
   void readDataFromLocal() async {
-
     _pref = await SharedPreferences.getInstance();
     id = _pref.getString("id");
     nickname = _pref.getString("nickname");
@@ -64,14 +66,13 @@ class SettingsScreenState extends State<SettingsScreen> {
 
     print("photo url $photourl");
 
-    setState(() {
+    aboutMeController = TextEditingController(text: aboutMe);
+    nickNameController = TextEditingController(text: nickname);
 
-    });
-
+    setState(() {});
   }
 
   getImage() async {
-
     XFile newImage = await ImagePicker().pickImage(source: ImageSource.gallery);
 
     if (newImage != null) {
@@ -80,62 +81,254 @@ class SettingsScreenState extends State<SettingsScreen> {
         isLoading = true;
       });
     }
+
+    getImageUploadToFirebaseAndStorage();
+  }
+
+  getImageUploadToFirebaseAndStorage() async {
+    String fileName = id;
+    var storageRef = FirebaseStorage.instance
+        .ref()
+        .child(fileName)
+        .putFile(imageFileAvatar)
+        .then((value) {
+      if (value != null) {
+        value.ref.getDownloadURL().then((imageUrl) {
+          photourl = imageUrl;
+
+          FirebaseFirestore.instance.collection("users").doc(id).update({
+            "photourl": photourl,
+            "aboutMe": aboutMe,
+            "nickname": nickname
+          }).then((data) async {
+            await _pref.setString("photourl", photourl);
+            setState(() {
+              isLoading = false;
+            });
+            Fluttertoast.showToast(
+                msg: "user updated successfully.....",
+                toastLength: Toast.LENGTH_LONG);
+          });
+        }).onError((error, stackTrace) {
+          Fluttertoast.showToast(msg: "Error while downloading imageUrl");
+          setState(() {
+            isLoading = false;
+          });
+        });
+      }
+    }).onError((error, stackTrace) {
+      Fluttertoast.showToast(msg: error.toString());
+      setState(() {
+        isLoading = false;
+      });
+    });
+  }
+
+  updateUser() async {
+
+    nicknameFocus.unfocus();
+    aboutMeFocus.unfocus();
+
+
+    setState((){
+      isLoading = false;
+    });
+
+    FirebaseFirestore.instance.collection("users").doc(id).update({
+      "photourl": photourl,
+      "aboutMe": aboutMe,
+      "nickname": nickname
+    }).then((data) async {
+      await _pref.setString("photourl", photourl);
+      await _pref.setString("aboutMe", aboutMe);
+      await _pref.setString("nickname", nickname);
+      setState(() {
+        isLoading = false;
+      });
+      Fluttertoast.showToast(
+          msg: "user updated successfully.....",
+          toastLength: Toast.LENGTH_LONG);
+    }).onError((error, stackTrace) {
+      Fluttertoast.showToast(msg: "Error while downloading imageUrl");
+      setState(() {
+        isLoading = false;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Column(
-          children: [
-            Container(
-              child: Center(
-                child: Stack(
-                  children: [
-                    (imageFileAvatar == null)
-                        ? photourl != null
-                        ? Material(
-                      child: CachedNetworkImage(
-                        imageUrl: photourl,
-                        fit: BoxFit.cover,
-                        width: 200,
-                        height: 200,
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                child: Center(
+                  child: Stack(
+                    children: [
+                      (imageFileAvatar == null)
+                          ? photourl != null
+                              ? Material(
+                                  child: CachedNetworkImage(
+                                    placeholder: (context, url) =>
+                                        CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.lightBlue),
+                                    ),
+                                    imageUrl: photourl,
+                                    fit: BoxFit.cover,
+                                    width: 200,
+                                    height: 200,
+                                  ),
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(125.0)),
+                                  clipBehavior: Clip.hardEdge,
+                                )
+                              : Icon(
+                                  Icons.account_circle,
+                                  color: Colors.grey,
+                                  size: 200,
+                                )
+                          : Material(
+                              child: Image.file(
+                                imageFileAvatar,
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                              borderRadius: BorderRadius.circular(125.0),
+                              clipBehavior: Clip.hardEdge,
+                            ),
+                      IconButton(
+                        onPressed: getImage,
+                        icon: Icon(
+                          Icons.camera_alt,
+                          color: Colors.white54.withOpacity(0.4),
+                          size: 100,
+                        ),
+                        padding: EdgeInsets.all(0.0),
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.grey,
+                        iconSize: 200.0,
                       ),
-                      borderRadius:
-                      BorderRadius.all(Radius.circular(125.0)),
-                      clipBehavior: Clip.hardEdge,
-                    )
-                        : Icon(Icons.account_circle,
-                        color: Colors.grey, size: 200)
-                        : Material(
-                      child: Image.file(
-                        imageFileAvatar,
-                        width: 200,
-                        height: 200,
-                        fit: BoxFit.cover,
+                    ],
+                  ),
+                ),
+                width: double.infinity,
+                margin: EdgeInsets.all(20.0),
+              ),
+
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                      padding: EdgeInsets.all(1.0),
+                      child: isLoading ? circularProgress() : Container()),
+                  Container(
+                    child: Text(
+                      "user Name:",
+                      style: TextStyle(
+                          color: Colors.lightBlueAccent,
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic),
+                    ),
+                    margin: EdgeInsets.only(left: 10, top: 10, bottom: 5.0),
+                  ),
+                  Container(
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(primaryColor: Colors.lightBlue),
+                      child: TextField(
+                        controller: nickNameController,
+                        decoration: InputDecoration(
+                            contentPadding: EdgeInsets.all(5.0),
+                            hintStyle: TextStyle(color: Colors.grey),
+                            hintText: "eg. Muhammad Asim"),
+                        onChanged: (value) {
+                          nickname = value;
+                        },
+                        focusNode: nicknameFocus,
                       ),
                     ),
-                    IconButton(
-                      onPressed: getImage,
-                      icon: Icon(
-                        Icons.camera_alt,
-                        color: Colors.white54.withOpacity(0.3),
-                        size: 100,
-                      ),
-                      padding: EdgeInsets.all(0.0),
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.grey,
-                      iconSize: 200.0,
+                    padding: EdgeInsets.only(left: 30, right: 30),
+                  ),
+                  Container(
+                    child: Text(
+                      "About Me:",
+                      style: TextStyle(
+                          color: Colors.lightBlueAccent,
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic),
                     ),
-                  ],
+                    margin: EdgeInsets.only(left: 10, top: 10, bottom: 5.0),
+                  ),
+                  Container(
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(primaryColor: Colors.lightBlue),
+                      child: TextField(
+                        controller: aboutMeController,
+                        decoration: InputDecoration(
+                            contentPadding: EdgeInsets.all(5.0),
+                            hintStyle: TextStyle(color: Colors.grey),
+                            hintText: "eg. Bio......"),
+                        onChanged: (value) {
+                          aboutMe = value;
+                        },
+                        focusNode: aboutMeFocus,
+                      ),
+                    ),
+                    padding: EdgeInsets.only(left: 30, right: 30),
+                  ),
+                ],
+              ),
+
+              //   buttons
+              Container(
+                child: FlatButton(
+                  child: Text(
+                    "Update",
+                    style: TextStyle(fontSize: 16.0),
+                  ),
+                  onPressed: updateUser,
+                  color: Colors.lightBlueAccent,
+                  splashColor: Colors.transparent,
+                  textColor: Colors.white,
+                  highlightColor: Colors.grey,
+                  padding: EdgeInsets.fromLTRB(30.0, 10.0, 30.0, 10.0),
+                ),
+                margin: EdgeInsets.only(top: 50.0, bottom: 1.0),
+              ),
+
+              //  logout button
+              Container(
+                padding: EdgeInsets.only(left: 50, right: 50.0),
+                child: RaisedButton(
+                  onPressed: signOut,
+                  child: Text(
+                    "LogOut",
+                    style: TextStyle(color: Colors.white, fontSize: 14.0),
+                  ),
+                  color: Colors.red,
                 ),
               ),
-              width: double.infinity,
-              margin: EdgeInsets.all(20.0),
-            ),
-          ],
-        )
+            ],
+          ),
+          padding: EdgeInsets.only(left: 15, right: 15),
+        ),
       ],
     );
+  }
+
+  var googleSignIn = GoogleSignIn();
+
+  void signOut() async {
+    await FirebaseAuth.instance.signOut();
+    await googleSignIn.disconnect();
+    await googleSignIn.signOut();
+    Navigator.pushAndRemoveUntil(
+        context, MaterialPageRoute(builder: (_) => MyApp()), (route) => false);
   }
 }

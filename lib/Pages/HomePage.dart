@@ -76,22 +76,14 @@ class HomeScreenState extends State<HomeScreen> {
       appBar:homeAppBar(),
       body: Center(
         child: MaterialButton(
-          onPressed: signOut,
+          onPressed: (){},
           child: Text("LogOut"),
         ),
       ),
     );
   }
 
-  void signOut() async {
 
-    await FirebaseAuth.instance.signOut();
-    await googleSignIn.disconnect();
-    await googleSignIn.signOut();
-    
-    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MyApp()), (route) => false);
-
-  }
 }
 
 class UserResult extends StatelessWidget {
