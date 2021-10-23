@@ -13,12 +13,16 @@ class User {
     this.createdAt,
   });
 
-  factory User.fromDocument(DocumentSnapshot doc) {
+
+  DocumentSnapshot ref;
+
+
+  factory User.fromDocument(Map<String, dynamic> doc) {
     return User(
-      id: doc.id,
-      photoUrl: doc['photoUrl'],
-      nickname: doc['nickname'],
-      createdAt: doc['createdAt'],
+      id: doc['id'].toString(),
+      photoUrl: doc["photourl"].toString(),
+      nickname: doc["nickname"].toString(),
+      createdAt: doc["createAt"].toString(),
     );
   }
 }
