@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:telegramchatapp/Models/user.dart' as mUser;
 import 'package:telegramchatapp/Pages/AccountSettingsPage.dart';
+import 'package:telegramchatapp/Pages/ChattingPage.dart';
 
 import 'package:telegramchatapp/Widgets/ProgressWidget.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -113,6 +114,7 @@ class HomeScreenState extends State<HomeScreen> {
           snapshot.data.docs.forEach((data) {
 
             print("some ${data.get("nickname")}");
+
             final userdata = new Map<String, dynamic>.from(data.data());
             print("userdata ${userdata}");
             mUser.User user  =  mUser.User.fromDocument(userdata);
@@ -168,11 +170,20 @@ class UserResult extends StatelessWidget {
         child: Column(
           children: [
             GestureDetector(
-              onTap: (){},
+              onTap: (){
+                Navigator.of(context).push(MaterialPageRoute(builder:  (_) => Chat(
+                  recieverId: eachUser.id,
+                  recieverPhoto:eachUser.photoUrl,
+                  recieverName:eachUser.nickname
+                )));
+              },
               child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.black,
-                  backgroundImage: CachedNetworkImageProvider(eachUser.photoUrl),
+                leading: Hero(
+                  tag: "avatar",
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black,
+                    backgroundImage: CachedNetworkImageProvider(eachUser.photoUrl),
+                  ),
                 ),
                 title: Text(eachUser.nickname, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),),
                 subtitle: Text("Joind" +
@@ -186,4 +197,6 @@ class UserResult extends StatelessWidget {
     );
 
   }
+
+
 }
