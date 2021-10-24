@@ -25,6 +25,9 @@ class HomeScreenState extends State<HomeScreen> {
   TextEditingController searchController = TextEditingController();
   Future<QuerySnapshot> allFoundUser;
 
+
+
+
   homeAppBar() {
     return AppBar(
       automaticallyImplyLeading: false,
@@ -79,7 +82,7 @@ class HomeScreenState extends State<HomeScreen> {
  controlSearching(String username)  {
     Future<QuerySnapshot> querySnapshot =  FirebaseFirestore.instance
         .collection("users")
-        .where("nickname", isEqualTo: username)
+        .where("nickname", isGreaterThanOrEqualTo: username)
         .get();
 
     print("my query ${querySnapshot.then((v) => v.docs.map((e) => e.data.call())) }");
@@ -110,11 +113,8 @@ class HomeScreenState extends State<HomeScreen> {
           }
           List<UserResult> allUser = [];
 
-
           snapshot.data.docs.forEach((data) {
-
             print("some ${data.get("nickname")}");
-
             final userdata = new Map<String, dynamic>.from(data.data());
             print("userdata ${userdata}");
             mUser.User user  =  mUser.User.fromDocument(userdata);
@@ -132,6 +132,7 @@ class HomeScreenState extends State<HomeScreen> {
          );
         });
   }
+
   displayNoSuchUser() {
     final Orientation orientation = MediaQuery.of(context).orientation;
     return Container(
