@@ -12,6 +12,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
+
 class Chat extends StatelessWidget {
   final String recieverId;
   final String recieverPhoto;
@@ -61,26 +63,50 @@ class ChatScreen extends StatefulWidget {
 }
 
 class ChatScreenState extends State<ChatScreen> {
-
   TextEditingController messageController = TextEditingController();
   FocusNode focusNode = FocusNode();
+
+  final listScrollController = ScrollController();
 
   bool isLoading;
   bool isDisplaySticker;
 
+  File imageFile;
+  String imageUrl;
+
+  String chatId;
+  String id;
+  SharedPreferences storedData;
+  var listMessages;
+
   @override
   void initState() {
-
     isLoading = false;
     isDisplaySticker = false;
 
     focusNode.addListener(onFocuseChange);
+    chatId = "";
+
+    readLocal();
     super.initState();
   }
 
+  readLocal() async {
+    storedData = await SharedPreferences.getInstance();
+    id = storedData.getString("id");
+    if (id.hashCode <= widget.receiverId.hashCode) {
+      chatId = '$id-${widget.receiverId}';
+    } else {
+      chatId = '${widget.receiverId}-$id';
+    }
+    FirebaseFirestore.instance
+        .collection("users")
+        .doc(id)
+        .update({"chattingWith": widget.receiverId});
+  }
 
-  onFocuseChange(){
-    if(focusNode.hasFocus){
+  onFocuseChange() {
+    if (focusNode.hasFocus) {
       setState(() {
         isDisplaySticker = false;
       });
@@ -95,7 +121,6 @@ class ChatScreenState extends State<ChatScreen> {
         children: [
           Column(
             children: [
-
               createListMessage(),
               isDisplaySticker ? createSticker() : Container(),
               createInput(),
@@ -107,32 +132,62 @@ class ChatScreenState extends State<ChatScreen> {
     );
   }
 
-
   createSticker() {
     return Container(
       width: double.infinity,
       height: 150.0,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Colors.grey, width: 0.5),
-        )
-      ),
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: Colors.grey, width: 0.5),
+          )),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              FlatButton(onPressed: (){}, child: Image.asset("images/mimi1.gif", width: 50.0, height: 50.0, fit: BoxFit.cover,), ),
-              FlatButton(onPressed: (){}, child: Image.asset("images/mimi2.gif", width: 50.0, height: 50.0, fit: BoxFit.cover,), ),
+              FlatButton(
+                onPressed: onSendMessage("mimi1", 2),
+                child: Image.asset(
+                  "images/mimi1.gif",
+                  width: 50.0,
+                  height: 50.0,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              FlatButton(
+                onPressed: onSendMessage("mimi2", 2),
+                child: Image.asset(
+                  "images/mimi2.gif",
+                  width: 50.0,
+                  height: 50.0,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ],
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              FlatButton(onPressed: (){}, child: Image.asset("images/mimi3.gif", width: 50.0, height: 50.0, fit: BoxFit.cover,), ),
-              FlatButton(onPressed: (){}, child: Image.asset("images/mimi4.gif", width: 50.0, height: 50.0, fit: BoxFit.cover,), ),
+              FlatButton(
+                onPressed: onSendMessage("mimi3", 2),
+                child: Image.asset(
+                  "images/mimi3.gif",
+                  width: 50.0,
+                  height: 50.0,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              FlatButton(
+                onPressed: onSendMessage("mimi4", 2),
+                child: Image.asset(
+                  "images/mimi4.gif",
+                  width: 50.0,
+                  height: 50.0,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ],
           ),
         ],
@@ -151,7 +206,7 @@ class ChatScreenState extends State<ChatScreen> {
               child: IconButton(
                 icon: Icon(Icons.image),
                 color: Colors.lightBlueAccent,
-                onPressed: () {},
+                onPressed: getImage,
               ),
             ),
             color: Colors.white,
@@ -166,7 +221,7 @@ class ChatScreenState extends State<ChatScreen> {
                 color: Colors.lightBlueAccent,
                 onPressed: () {
                   focusNode.unfocus();
-                  setState((){
+                  setState(() {
                     isDisplaySticker = !isDisplaySticker;
                   });
                 },
@@ -178,64 +233,82 @@ class ChatScreenState extends State<ChatScreen> {
           Flexible(
               child: Container(
             child: TextField(
-              style: TextStyle(
-                color: Colors.black, fontSize: 16.0
-              ),
+              style: TextStyle(color: Colors.black, fontSize: 16.0),
               decoration: InputDecoration.collapsed(
-                  hintText: "write here ....",
-                  hintStyle: TextStyle(color: Colors.grey),
-                  border: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey, width: 1)
-                  ),
+                hintText: "write here ....",
+                hintStyle: TextStyle(color: Colors.grey),
+                border: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey, width: 1)),
               ),
               controller: messageController,
               focusNode: focusNode,
             ),
           )),
 
-        //  send btn
+          //  send btn
           Material(
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 8.0),
               child: IconButton(
                 icon: Icon(Icons.send),
                 color: Colors.lightBlueAccent,
-                onPressed: (){},
+                onPressed: onSendMessage(messageController.text, 0),
               ),
             ),
           ),
-
         ],
       ),
       width: double.infinity,
       height: 60.0,
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey,
-            width: 0.5
-          )
-        ),
-        color: Colors.white
-      ),
+          border: Border(top: BorderSide(color: Colors.grey, width: 0.5)),
+          color: Colors.white),
     );
   }
 
   createListMessage() {
     return Flexible(
-      child: Center(
-        child: CircularProgressIndicator( valueColor: AlwaysStoppedAnimation<Color>(Colors.lightBlueAccent),),
-      ),
-    );
+        child: chatId == ""
+            ? Center(
+                child: CircularProgressIndicator(
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(Colors.lightBlueAccent),
+                ),
+              )
+            : StreamBuilder(
+                stream: FirebaseFirestore.instance
+                    .collection("messages")
+                    .doc(chatId)
+                    .collection(chatId)
+                    .orderBy("timestamp", descending: true)
+                    .snapshots(),
+          builder: (context, snapshot){
+                  if(!snapshot.hasData){
+                    return  Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.lightBlueAccent),
+                      ),
+                    );
+                  }else{
+                    listMessages = snapshot.data.doc;
+                    return ListView.builder(
+                      // itemBuilder: (context, index) => createItem(index, snapshot.data.doc[index]),
+                      itemCount: snapshot.data.doc.length,
+                      padding: EdgeInsets.all(4.0),
+                      controller: listScrollController,
+                      reverse: true,
+                    );
+                  }
+          },
+              ));
   }
 
   Future<bool> onBackPress() {
-
-    if(isDisplaySticker){
+    if (isDisplaySticker) {
       setState(() {
         isDisplaySticker = false;
       });
-    }else{
+    } else {
       Navigator.pop(context);
     }
 
@@ -244,5 +317,68 @@ class ChatScreenState extends State<ChatScreen> {
 
   createProgress() {
     return Positioned(child: isLoading ? circularProgress() : Container());
+  }
+
+  getImage() async {
+    var image = await ImagePicker().pickImage(source: ImageSource.gallery);
+
+    imageFile = File(image.path);
+
+    if (imageFile != null) {
+      isLoading = true;
+    }
+
+    uploadImage();
+  }
+
+  uploadImage() {
+    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+
+    var ref = FirebaseStorage.instance
+        .ref()
+        .child("chat_images")
+        .child(fileName)
+        .putFile(imageFile)
+        .then((image) {
+      image.ref.getDownloadURL().then((value) {
+        // storing image String  in imageUrl
+        imageUrl = value;
+        setState(() {
+          isLoading = false;
+          onSendMessage(imageUrl, 1);
+        });
+      }).onError((error, stackTrace) {
+        setState(() {
+          isLoading = false;
+          Fluttertoast.showToast(msg: "Error" + error);
+        });
+      });
+    });
+  }
+
+  onSendMessage(String text, int type) {
+    if (text != "") {
+      messageController.clear();
+
+      var docRef = FirebaseFirestore.instance
+          .collection("messages")
+          .doc(chatId)
+          .collection(chatId)
+          .doc(DateTime.now().millisecondsSinceEpoch.toString());
+
+      FirebaseFirestore.instance.runTransaction((transaction) async {
+        transaction.set(docRef, {
+          "idFrom": id,
+          "idTo": widget.receiverId,
+          "timestamp": DateTime.now().millisecondsSinceEpoch.toString(),
+          "content": text,
+          "type": type
+        });
+      });
+      listScrollController.animateTo(0.0,
+          duration: Duration(milliseconds: 700), curve: Curves.bounceInOut);
+    } else {
+      Fluttertoast.showToast(msg: "Empty msg can't be send ...");
+    }
   }
 }

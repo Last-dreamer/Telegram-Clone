@@ -95,8 +95,6 @@ class HomeScreenState extends State<HomeScreen> {
     searchController.clear();
   }
 
-  GoogleSignIn googleSignIn = GoogleSignIn();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
