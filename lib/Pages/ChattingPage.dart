@@ -12,8 +12,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-
 class Chat extends StatelessWidget {
   final String recieverId;
   final String recieverPhoto;
@@ -30,7 +28,7 @@ class Chat extends StatelessWidget {
           Padding(
             padding: EdgeInsets.all(8),
             child: Hero(
-              tag: "avatar",
+              tag: "${recieverId}",
               child: CircleAvatar(
                 backgroundColor: Colors.black,
                 backgroundImage: CachedNetworkImageProvider(recieverPhoto),
@@ -148,7 +146,9 @@ class ChatScreenState extends State<ChatScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               FlatButton(
-                onPressed: onSendMessage("mimi1", 2),
+                onPressed: () {
+                  onSendMessage("mimi1", 2);
+                },
                 child: Image.asset(
                   "images/mimi1.gif",
                   width: 50.0,
@@ -157,7 +157,9 @@ class ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               FlatButton(
-                onPressed: onSendMessage("mimi2", 2),
+                onPressed: () {
+                  onSendMessage("mimi2", 2);
+                },
                 child: Image.asset(
                   "images/mimi2.gif",
                   width: 50.0,
@@ -171,7 +173,9 @@ class ChatScreenState extends State<ChatScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               FlatButton(
-                onPressed: onSendMessage("mimi3", 2),
+                onPressed: () {
+                  onSendMessage("mimi3", 2);
+                },
                 child: Image.asset(
                   "images/mimi3.gif",
                   width: 50.0,
@@ -180,7 +184,9 @@ class ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               FlatButton(
-                onPressed: onSendMessage("mimi4", 2),
+                onPressed: () {
+                  onSendMessage("mimi4", 2);
+                },
                 child: Image.asset(
                   "images/mimi4.gif",
                   width: 50.0,
@@ -252,7 +258,9 @@ class ChatScreenState extends State<ChatScreen> {
               child: IconButton(
                 icon: Icon(Icons.send),
                 color: Colors.lightBlueAccent,
-                onPressed: onSendMessage(messageController.text, 0),
+                onPressed: () {
+                  onSendMessage(messageController.text, 0);
+                },
               ),
             ),
           ),
@@ -281,25 +289,29 @@ class ChatScreenState extends State<ChatScreen> {
                     .doc(chatId)
                     .collection(chatId)
                     .orderBy("timestamp", descending: true)
-                    .snapshots(),
-          builder: (context, snapshot){
-                  if(!snapshot.hasData){
-                    return  Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.lightBlueAccent),
-                      ),
-                    );
-                  }else{
-                    listMessages = snapshot.data.doc;
+                    .get()
+                    .asStream(),
+                builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                  if (snapshot.hasData) {
+                    // final allData = Map<String, dynamic>.from(snapshot.data);
+                    listMessages = snapshot.data.docs;
+                    print("list of messages ${snapshot.data.docs.length}");
                     return ListView.builder(
-                      // itemBuilder: (context, index) => createItem(index, snapshot.data.doc[index]),
-                      itemCount: snapshot.data.doc.length,
+                      itemBuilder: (context, index) =>
+                          createItem(index, snapshot.data.docs[index]),
+                      itemCount: snapshot.data.docs.length,
                       padding: EdgeInsets.all(4.0),
                       controller: listScrollController,
                       reverse: true,
                     );
+                  } else {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                      ),
+                    );
                   }
-          },
+                },
               ));
   }
 
@@ -379,6 +391,209 @@ class ChatScreenState extends State<ChatScreen> {
           duration: Duration(milliseconds: 700), curve: Curves.bounceInOut);
     } else {
       Fluttertoast.showToast(msg: "Empty msg can't be send ...");
+    }
+  }
+
+  createItem(int index, DocumentSnapshot doc) {
+    if (doc['idFrom'] == id) {
+      return Row(
+        children: [
+          doc['type'] == 0
+              ? Container(
+                  width: 200,
+                  padding: EdgeInsets.fromLTRB(15, 15, 15, 10),
+                  child: Text(
+                    doc["content"],
+                    style: TextStyle(
+                        color: Colors.black, fontWeight: FontWeight.w500),
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(15.0),
+                    color: Colors.white,
+                  ),
+                  margin: EdgeInsets.only(
+                      bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                      right: 10),
+                )
+              : doc["type"] == 1
+                  ? Container(
+                      child: FlatButton(
+                        child: Material(
+                          child: CachedNetworkImage(
+                            width: 200,
+                            height: 200,
+                            placeholder: (context, url) => circularProgress(),
+                            imageUrl: doc["content"],
+                            errorWidget: (context, url, error) => Material(
+                              child: Image.asset(
+                                  "images/img_not_available.jpeg",
+                                  width: 200,
+                                  height: 200,
+                                  fit: BoxFit.cover),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8.0)),
+                              clipBehavior: Clip.hardEdge,
+                            ),
+                            fit: BoxFit.cover,
+                          ),
+                          borderRadius: BorderRadius.circular(8.0),
+                          clipBehavior: Clip.hardEdge,
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) =>
+                                  FullPhoto(url: doc["content"])));
+                        },
+                      ),
+                      margin: EdgeInsets.only(
+                          bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                          right: 10),
+                    )
+                  : Container(
+                      child: Image.asset(
+                        "images/${doc["content"]}.gif",
+                        width: 200,
+                        height: 200,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+
+
+        ],
+        mainAxisAlignment: MainAxisAlignment.end,
+      );
+    } else {
+      return Container(
+        child: Column(
+          children: [
+            Row(
+              children: [
+                isLastMessageLeft(index)
+                    ? Container(
+                  width: 10,
+                  height: 10,
+                  color: Colors.green,
+                )
+                    : Material(
+                  child: CachedNetworkImage(
+                    width: 35,
+                    height: 35,
+                    placeholder: (context, url) => circularProgress(),
+                    imageUrl: widget.receiverPhoto,
+                    errorWidget: (context, url, error) => Material(
+                      child: Image.asset("images/img_not_available.jpeg",
+                          width: 200, height: 200, fit: BoxFit.cover),
+                      borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                      clipBehavior: Clip.hardEdge,
+                    ),
+                    fit: BoxFit.cover,
+                  ),
+                  borderRadius: BorderRadius.circular(25.0),
+                  clipBehavior: Clip.hardEdge,
+                ),
+
+                //   display images
+                doc['type'] == 0
+                    ? Container(
+                        width: 150,
+                        padding: EdgeInsets.fromLTRB(15, 15, 15, 10),
+                        child: Text(
+                          doc["content"],
+                          style: TextStyle(
+                              color: Colors.black, fontWeight: FontWeight.w500),
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15.0),
+                          color: Colors.grey[200],
+                        ),
+                        // margin: EdgeInsets.only(left: -10),
+                      )
+                    : doc["type"] == 1
+                        ? Container(
+                            child: FlatButton(
+                              child: Material(
+                                child: CachedNetworkImage(
+                                  width: 150,
+                                  height: 200,
+                                  placeholder: (context, url) =>
+                                      circularProgress(),
+                                  imageUrl: doc["content"],
+                                  errorWidget: (context, url, error) =>
+                                      Material(
+                                    child: Image.asset(
+                                        "images/img_not_available.jpeg",
+                                        width: 200,
+                                        height: 200,
+                                        fit: BoxFit.cover),
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(8.0)),
+                                    clipBehavior: Clip.hardEdge,
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
+                                borderRadius: BorderRadius.circular(8.0),
+                                clipBehavior: Clip.hardEdge,
+                              ),
+                              onPressed: () {
+                                Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) =>
+                                        FullPhoto(url: doc["content"])));
+                              },
+                            ),
+                            margin: EdgeInsets.only(left: 1),
+                          )
+                        : Container(
+                            child: Image.asset(
+                              "images/${doc["content"]}.gif",
+                              width: 150,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+              ],
+            ),
+
+            isLastMessageLeft(index)
+                ? Container(
+                    child: Text(
+                      DateFormat("dd MMMM, yyyy -hh:mm:aa").format(
+                          DateTime.fromMillisecondsSinceEpoch(
+                              doc['timestamp'])),
+                      style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12.0,
+                          fontStyle: FontStyle.italic),
+                    ),
+                    margin: EdgeInsets.only(left: 50, top: 50, bottom: 5.0),
+                  )
+                : Container()
+          ],
+          crossAxisAlignment: CrossAxisAlignment.start,
+        ),
+        margin: EdgeInsets.only(bottom: 10.0),
+      );
+    }
+  }
+
+  bool isLastMessageRight(int index) {
+    if (index > 0 &&
+            listMessages != null &&
+            listMessages[index - 1]["idFrom"] == id ||
+        index == 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool isLastMessageLeft(int index) {
+    if (index > 0 &&
+            listMessages != null &&
+            listMessages[index - 1]["idFrom"] != id ||
+        index == 0) {
+      return true;
+    } else {
+      return false;
     }
   }
 }

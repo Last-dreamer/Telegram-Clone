@@ -110,7 +110,6 @@ class HomeScreenState extends State<HomeScreen> {
             return circularProgress();
           }
           List<UserResult> allUser = [];
-
           snapshot.data.docs.forEach((data) {
             print("some ${data.get("nickname")}");
             final userdata = new Map<String, dynamic>.from(data.data());
@@ -178,7 +177,7 @@ class UserResult extends StatelessWidget {
               },
               child: ListTile(
                 leading: Hero(
-                  tag: "avatar",
+                  tag: "${eachUser.id}",
                   child: CircleAvatar(
                     backgroundColor: Colors.black,
                     backgroundImage: CachedNetworkImageProvider(eachUser.photoUrl),

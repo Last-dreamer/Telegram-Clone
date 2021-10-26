@@ -3,6 +3,10 @@ import 'package:photo_view/photo_view.dart';
 
 class FullPhoto extends StatelessWidget {
 
+  final String url;
+
+  const FullPhoto({Key key, this.url}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
   }

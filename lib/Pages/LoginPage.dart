@@ -44,7 +44,7 @@ class LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              "Telgram Clone",
+              "Dreamer Chat's",
               style: TextStyle(
                   fontFamily: "Signatra", fontSize: 62, color: Colors.white),
             ),
