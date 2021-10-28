@@ -9,23 +9,11 @@ class FullPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  }
-}
-
-class FullPhotoScreen extends StatefulWidget {
-  @override
-  State createState() => FullPhotoScreenState();
-}
-
-class FullPhotoScreenState extends State<FullPhotoScreen> {
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-
+    return Scaffold(
+      appBar: AppBar(title: Text("Full Image"), backgroundColor: Colors.lightBlueAccent, centerTitle: true,),
+      body: Container(
+        child: PhotoView(imageProvider: NetworkImage(url),),
+      ),
+    );
   }
 }
